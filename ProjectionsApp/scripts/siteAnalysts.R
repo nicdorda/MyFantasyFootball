@@ -1,0 +1,137 @@
+source("projections/dataSites.R")
+
+siteAnalysts = list(
+  cbs1 = list(name = "Jamey Eisenberg",
+              analystId = "cbs1",
+              id = "jamey_eisenberg",
+              dataSite = "CBS",
+              limitPos = NA,
+              seasonProj = TRUE,
+              weekProj = TRUE
+              ),
+  cbs2 = list(name = "Dave Richard",
+              analystId = "cbs2",
+              id = "dave_richard",
+              dataSite = "CBS",
+              limitPos = NA,
+              seasonProj = TRUE,
+              weekProj = TRUE
+              ),
+  yahoo = list(name = "Yahoo Sports",
+               analystId = "yahoo",
+               id = "yahoo",
+               dataSite = "Yahoo",
+               limitPos = NA,
+               seasonProj = TRUE,
+               weekProj = TRUE
+               ),
+  espn = list(name = "ESPN",
+              analystId = "espn",
+               id = "espn",
+               dataSite = "ESPN",
+               limitPos = NA,
+              seasonProj = TRUE,
+              weekProj = TRUE
+  ),
+  
+  nfl = list(name = "NFL",
+             analystId = "nfl",
+              id = "nfl",
+              dataSite = "NFL",
+              limitPos = NA,
+             seasonProj = TRUE,
+             weekProj = TRUE
+  ),
+  fox = list(name = "FOX",
+             analystId = "fox",
+             id = "fox",
+             dataSite = "FOX",
+             limitPos = NA,
+             seasonProj = TRUE,
+             weekProj = TRUE
+  ),
+  
+  fft = list(name = "FFToday",
+             analystId = "fft",
+             id = "fft",
+             dataSite = "fft",
+             limitPos = NA,
+             seasonProj = TRUE,
+             weekProj = TRUE
+  ),
+  nmf = list(name = "NumberFire",
+             analystId = "nmf",
+             id = "nmf",
+             dataSite = "nmf",
+             limitPos = NA,
+             seasonProj = FALSE,
+             weekProj = TRUE
+  ),
+  ffp = list(name = "FantasyPros",
+             analystId = "ffp",
+             id = "ffp",
+             dataSite = "ffp",
+             limitPos = NA,
+             seasonProj = FALSE,
+             weekProj = TRUE
+  ),
+  fbg1 = list(name = "Dodds-Norton",
+              analystId = "fbg1",
+             id = 0,
+             dataSite = "fbg",
+             limitPos = NA,
+             seasonProj = FALSE,
+             weekProj = TRUE
+  ),
+  fbg2 = list(name = "Dodds",
+              analystId = "fbg2",
+              id = 2,
+              dataSite = "fbg",
+              limitPos = NA,
+              seasonProj = TRUE,
+              weekProj = FALSE
+  ),
+  fbg3 = list(name = "Tremblay",
+              analystId = "fbg3",
+              id = 53,
+              dataSite = "fbg",
+              limitPos = NA,
+              seasonProj = TRUE,
+              weekProj = TRUE
+  ),
+  fbg4 = list(name = "Herman",
+              analystId = "fbg4",
+              id = 60,
+              dataSite = "fbg",
+              limitPos = "K",
+              seasonProj = TRUE,
+              weekProj = TRUE
+  ),
+  fbg5 = list(name = "Henry",
+              analystId = "fbg5",
+              id = 41,
+              dataSite = "fbg",
+              limitPos = c("QB", "RB", "WR", "TE"),
+              seasonProj = TRUE,
+              weekProj = FALSE
+  ),
+  fbg6 = list(name = "Wood",
+              analystId = "fbg6",
+              id = 50,
+              dataSite = "fbg",
+              limitPos = c("QB", "RB", "WR", "TE"),
+              seasonProj = TRUE,
+              weekProj = FALSE
+  ),
+  fbg7 = list(name = "Bloom",
+              analystId = "fbg7",
+              id = 107,
+              dataSite = "fbg",
+              limitPos = c("QB", "RB", "WR", "TE"),
+              seasonProj = FALSE,
+              weekProj = TRUE
+  )
+)
+
+save(siteAnalysts, dataSites, file="projections/data/projectionSites.Rdata")
+save(siteAnalysts, dataSites, file="ProjectionsApp/Data/projectionSites.Rdata")
