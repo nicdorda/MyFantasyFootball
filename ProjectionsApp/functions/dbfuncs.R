@@ -113,7 +113,7 @@ writePts2DB <- function(weekNo, season, ptsData){
 		colNames <- getColNames(tblName)
 		
 		sqlData <- ptsData[[posName]]
-    print(class(sqlData))
+    
 		if(nrow(sqlData) >0){
 	    sqlData$dataScrapeId <- scrapeId
       appendSqlTable(tblName, sqlData[!is.na(as.numeric(sqlData$projPts)) , colNames], fast = FALSE)

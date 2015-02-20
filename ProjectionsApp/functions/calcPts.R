@@ -83,25 +83,23 @@ multPts <- function(dataRow, posId, leagueId = 1){
 }
 
 defPts <- function(ptsAllow, leagueId){
-  leagueCode <- ffLeagues$leagueCode[ffLeagues$leagueId == leagueId]
+  ptsSqlQry <- paste("SELECT thresHold, ptsScore from ptsAllowScore where leagueId =", leagueId)
+  
+  ptsScore <- ffSqlQry(ptsSqlQry)
+  
   is.season <- (ptsAllow > 100)
   is.season <- ifelse(is.na(is.season), TRUE, is.season)
   if(is.season == TRUE){
     ptsAllow <- ptsAllow/16
   }
-  pts <- switch(leagueCode,
-                "sffl" = ifelse(ptsAllow == 0, 15, 
-                                ifelse(ptsAllow <10, 8,
-                                       ifelse(ptsAllow < 20, 6, 
-                                              ifelse(ptsAllow < 30, 4, 0)))),
-                "fand" = ifelse(ptsAllow == 0, 10,
-                                ifelse(ptsAllow < 7, 7,
-                                       ifelse(ptsAllow < 14, 4,
-                                              ifelse(ptsAllow < 21, 1,
-                                                     ifelse(ptsAllow < 28, 0, 
-                                                            ifelse(ptsAllow < 35, -1, -4)))))),
-                "vict" = 12 - 0.5 * as.numeric(ptsAllow)
-                )
+  
+  for(r in 1:nrow(ptsScore)){
+    if(ptsAllow <= ptsScore$thresHold[r]){
+      pts <- ptsScore$ptsScore[r]
+      break()
+    }
+  }
+  
   if(is.season == TRUE){
     pts = pts *16
   }

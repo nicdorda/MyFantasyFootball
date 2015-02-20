@@ -35,38 +35,32 @@ shinyUI(navbarPage(title="Fantasy Football Projections",
                             )
           
                             )
-                            ),
-                   tabPanel("Rankings"
-                   ),
-                   tabPanel("League Setup",
-                            fluidPage(fluidRow(
-                              column(3, uiOutput("viewLeague")),
-                              column(3, 
-                                     inputPanel(
-                                      uiOutput("leagueName"),
-                                     uiOutput("leagueCode"),
-                                     uiOutput("dfsLeague"),
-                                     uiOutput("leagueType"),
-                                     splitLayout(cellWidths = c("75%","75%"), 
-                                        actionButton("saveLeague", "Save League"),
-                                        uiOutput("editSavePoints"))),
-                                     inputPanel(
-                                     uiOutput("ptsForm"))
-                                     ),
-                              column(6, tabsetPanel(
-                                        tabPanel("Yardage points", dataTableOutput("leagueYdPts"), value = "yds"),
-                                        tabPanel("Multiplier points", dataTableOutput("leagueMultPts"), value = "mult")
-                                        , id="scoring")
-                                     ))
+                            )
+                   ,
+                   tabPanel("Daily Leagues",
+                             fluidPage(
+                               fluidRow(column(2, 
+                                                selectInput("dfslLeague", "Select League", leagueSelect[which(unlist(leagueSelect) %in% ffLeagues$leagueCode[ffLeagues$dfsLeague == TRUE])]),
+                                                selectInput("dfsSeason", "Season:", seasonSelect),
+                                                selectInput("dfsWeekNo", "Week:", weekSelect) ,
+                                                fileInput("salaryFile", "Upload Salaries", accept=c('text/csv', 
+                                                                                                    'text/comma-separated-values,text/plain', 
+                                                                                                    '.csv')) #,
+                                               #actionButton("runOptimal", "Optimize lineup")
+                                              ),
+                                        column(5, tags$h4("Optimal Value Lineup"), dataTableOutput("dfsLineupVal")),
+                                        column(5, tags$h4("Optimal Points Lineup"), dataTableOutput("dfsLineupPts"))
+                               )
                               )
                    )
-                   #,
-                   #navbarMenu("DFS Leagues",
+                   
+                  # ,
+                  # tabPanel("DFS Leagues",
                   #            tabPanel("Victiv"  
                   #            ),
                   #            tabPanel("FanDuel"
                   #                     )
-                  #            )
+                              )
                    
-                   )
+                   #)
 )

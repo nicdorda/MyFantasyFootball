@@ -16,7 +16,6 @@ getRanks <- function(posName, leagueType, weekNo){
   } else {
     url_path <- paste("/", ifelse(leagueType != "std", paste(tolower(leagueType), "-", sep = ""),""), tolower(posName), "-cheatsheets.php", sep = "") 
   }
-  print(url_path)
   rnks <-readHTMLTable(paste(url_base, url_path, sep = ""), stringsAsFactors = FALSE)$data
     
     if((posName %in% c("QB", "K", "DST") & leagueType == "std") | posName %in% c("RB", "WR", "TE")){
@@ -33,9 +32,9 @@ getRanks <- function(posName, leagueType, weekNo){
       posId <- playerPositions[playerPositions$posCode == posName, "posId"]
       rnks$posId = posId
       rnks <- rnks[, which(names(rnks) %in% c("Player", names(ecrRank)))]
-      print(names(rnks))
+      
       rnks <- merge(x=rnks, y=dbPlayers[,c("playerNfl", "playerName")], by.x= "Player", by.y = "playerName")
-      print(rnks[rnks$ecrRank ==123,])
+      
       rnks$playerId <- rnks$playerNfl
       rnks$playerNfl <- NULL
       rnks$Player <- NULL

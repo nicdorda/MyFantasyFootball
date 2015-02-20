@@ -1,5 +1,5 @@
 library(shiny)
-leagueSelect <- leagueSelect
+library(Rglpk)
 shinyServer(function(input, output, session) {
   ## Reading the functions used to read and write to database
   source(paste(getwd(), "/functions/dbfuncs.R", sep=""))
@@ -39,12 +39,13 @@ shinyServer(function(input, output, session) {
   })
   
   output$viewExpert <- renderUI({
+    
     if(input$weekNo == 0){
       selectInput("viewProjExprt", "Analyst", allAnalysts[allAnalysts %in% siteAnalysts$projAnalystId[siteAnalysts$seasonProj]], 
-                  selected = which(names(allAnalysts) == "Aggregate"), width = '300px') 
+                  selected = which(names(allAnalysts) == "Average"), width = '300px') 
     } else {
       selectInput("viewProjExprt", "Analyst", allAnalysts[allAnalysts %in% siteAnalysts$projAnalystId[siteAnalysts$weekProj]], 
-                  selected = which(names(allAnalysts) == "Aggregate"), width = '300px')
+                  selected = which(names(allAnalysts) == "Average"), width = '300px')
     }
     
   })
@@ -129,17 +130,16 @@ shinyServer(function(input, output, session) {
  
   ### Generate the data table with the stat projections.
   output$statProj <- renderDataTable({
+    
     sid <- scrapeId()
     plPos <- playerPositions$posCode[playerPositions$posId == input$projPos]
     removeCols <- c("playerNfl", "dataScrapeId", "projAnalystId", "nobs", "projId", "retTD") #, "paAtt", "paCmp", "ruAtt")
-
+  
     dbTbl <- paste(tolower(plPos), "Projections", sep="")
-    
     dataQry <- paste("SELECT * FROM", dbTbl ,"WHERE dataScrapeId =", as.character(sid), "AND projAnalystId =", 
                      as.character(input$viewProjExprt)) 
     
     data <- ffSqlQry(dataQry)
-    
     data <- as.data.frame(lapply(data, function(x)ifelse(!is.nan(x) & is.numeric(x), round(x,1),x)))
     data <- merge(x= dbPlayers[,c("playerNfl", "playerName", "playerTeam")], y=data, by.x = "playerNfl", by.y = "playerId")
     data <- data[,-which(names(data) %in% removeCols)]
@@ -181,7 +181,7 @@ shinyServer(function(input, output, session) {
    riskQry <- paste("SELECT playerId, riskVal from riskValues where leagueCode =", lgCode,
                    "AND dataScrapeId =", as.character(sid))
    riskValues <- ffSqlQry(riskQry)
-   print(nrow(riskValues))
+   
    
    data <- merge(x=data, y=riskValues, by = "playerId")
    
@@ -191,7 +191,7 @@ shinyServer(function(input, output, session) {
    pName <- paste("'", posName, "'", sep = "")
    
    data <- merge(x= dbPlayers[,c("playerNfl", "playerName", "playerTeam", "playerPos")], y=data, by.x = "playerNfl", by.y = "playerId")
-   print(input$leagueProj)
+   
    if(!as.logical(ffLeagues[ffLeagues$leagueCode == input$leagueProj, "dfsLeague"])){
      vorQry <- paste("SELECT vorPts, flxVor, posCode from leagueVorBaseline WHERE dataScrapeId = ", as.character(sid), "AND leagueCode =", lgCode)
      vorPts <- ffSqlQry(vorQry)
@@ -232,7 +232,7 @@ shinyServer(function(input, output, session) {
     data <- data[,c("Player", names(data)[which(names(data) != "Player")])]
     
    } else {
-     print("all Pos")
+     
      data <- data[with(data, order(-projPts, maxPts)), ]
      data$Rank <- max(rank(data$projPts, ties.method="first")) - rank(data$projPts, ties.method="first") +1
      data$Player <- paste(data$playerName, data$playerPos, data$playerTeam, sep =", ")
@@ -249,6 +249,91 @@ shinyServer(function(input, output, session) {
    
  })
  
- source(paste(getwd(),"/scripts/leagueSetup.R", sep =""), local = TRUE)
+ output$dfsLineupVal<- renderDataTable({
+   if(is.null(input$salaryFile))
+     return(NULL)
+   data <- optimalLineup()[optimalLineup()$type =="Value",  c("posCode", "Player", "Salary", "projPts", "H.Value")]
+   total <- data.frame(posCode = NA, Player = "Total", Salary = sum(data$Salary), projPts = sum(data$projPts), H.Value = sum(data$H.Value))
+   data <- rbind(data,total)
+   names(data) <- c("Position", "Player", "Salary", "Points", "H.Value")
+   data$H.Value <- round(data$H.Value,2)
+   data
+ }, options = list(paging = FALSE, searching = FALSE))
  
+ output$dfsLineupPts<- renderDataTable({
+   if(is.null(input$salaryFile))
+     return(NULL)
+   data <- optimalLineup()[optimalLineup()$type =="Points",  c("posCode", "Player", "Salary", "projPts", "H.Value")]
+   total <- data.frame(posCode = NA, Player = "Total", Salary = sum(data$Salary), projPts = sum(data$projPts), H.Value = sum(data$H.Value))
+   data <- rbind(data,total)
+   names(data) <- c("Position", "Player", "Salary", "Points", "H.Value")
+   data$H.Value <- round(data$H.Value,2)
+   data
+ }, options = list(paging = FALSE, searching = FALSE))
+optimalLineup <- reactive({
+  
+  salFile <- input$salaryFile
+  
+  if(is.null(salFile))
+    return(NULL)
+  
+  sal <- read.csv(salFile$datapath, stringsAsFactors = FALSE )
+  sal$Player <- getPlayerName(sal$Player)
+  
+  scrapeQry <- paste("SELECT dataScrapeId FROM dataScrapes WHERE weekNo =", as.character(input$dfsWeekNo), "AND seasonYear =", as.character(input$dfsSeason))
+  scrapeId <- ffSqlQry(scrapeQry)$dataScrapeId
+  
+  sal$Pos[sal$Pos == "D"] <- "DEF"
+  sal <- merge(x = sal, y= dbPlayers[, c("playerName", "playerNfl")], by.x = "Player", by.y = "playerName", all.x = TRUE)
+  
+  sal$Salary <- as.numeric(gsub("\\$|,", "", sal$Salary))
+  
+  ptsQry <- paste("SELECT playerId, projPts FROM projPts where dataScrapeId = ", scrapeId, "AND projAnalystId = 17 AND leagueCode = '" , input$dfslLeague, "'", sep="" )
+  
+  projPts <- ffSqlQry(ptsQry)
+  
+  sal <- merge(x=sal, y=projPts, by.x = "playerNfl", by.y ="playerId", all.x = TRUE)
+  sal$projPts[is.na(sal$projPts)] <- 0
+  
+  sal$H.Value <- (sal$projPts^sqrt(3)) / sal$Salary * 2000
+  sal <- merge(x = playerPositions[, c("posId", "posCode")], y=sal, by.x = "posCode", by.y = "Pos")
+  sal <- sal[with(sal, order(posId,-projPts)),]
+  
+  QBPos <- as.numeric(sal$posCode=="QB")
+  RBPos <- as.numeric(sal$posCode=="RB")
+  WRPos <- as.numeric(sal$posCode=="WR")
+  TEPos <- as.numeric(sal$posCode=="TE")
+  PKPos <- as.numeric(sal$posCode=="K")
+  TDPos <- as.numeric(sal$posCode=="DEF")
+  Salary <- sal$Salary
+  Points <- sal$projPts
+  HValue <- sal$H.Value
+  Lineup <- c(rep(0, length(Salary)))
+  
+  mat_data <- cbind(QBPos, RBPos, WRPos, TEPos, PKPos, TDPos, Salary)
+  
+  dmatrix <- t(matrix(mat_data, ncol=7))
+  
+  rhs <- c(1,2,3,1,1,1,60000)
+  dir <- c(rep("==",6), "<=")
+  max <- TRUE
+  types <- c(rep("I", length(Salary)))
+  
+  bounds <- list(lower = list(ind = 1:length(Salary), val = rep(0, length(Salary))),
+                 upper = list(ind = 1:length(Salary), val = rep(1, length(Salary))))
+  
+  result <- Rglpk_solve_LP(HValue, dmatrix, dir, rhs, bounds, types, max)
+  
+  val_players <- sal[as.logical(result$solution), c("posCode", "Player", "Salary", "projPts", "H.Value")]
+  val_players$type = "Value"
+  
+  
+  result <- Rglpk_solve_LP(Points, dmatrix, dir, rhs, bounds, types, max)
+  
+  pts_players <- sal[as.logical(result$solution), c("posCode", "Player", "Salary", "projPts", "H.Value")]
+  pts_players$type <- "Points"
+  resultdf <- rbind(val_players,pts_players)
+  
+  return(resultdf)
+ })
 })
